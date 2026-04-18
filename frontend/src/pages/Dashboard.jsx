@@ -116,7 +116,8 @@ function Dashboard() {
     formData.append('file', compressedFile);
 
     try {
-      const response = await fetch(`http://${window.location.hostname}:8000/predict`, {
+      const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
+      const response = await fetch(`${apiUrl}/predict`, {
         method: 'POST',
         body: formData,
       });
