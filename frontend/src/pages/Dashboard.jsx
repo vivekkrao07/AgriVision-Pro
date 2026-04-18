@@ -116,7 +116,7 @@ function Dashboard() {
     formData.append('file', compressedFile);
 
     try {
-      const response = await fetch('http://localhost:8000/predict', {
+      const response = await fetch(`http://${window.location.hostname}:8000/predict`, {
         method: 'POST',
         body: formData,
       });
