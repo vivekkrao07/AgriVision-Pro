@@ -84,12 +84,48 @@
   animation: pulseGlow 2s infinite;
 }
 
-/* Enhancing Hover on result cards */
-.result-card {
-  transition: all 0.3s ease;
+/* Enhancing Hover on result cards and glass containers */
+.result-card, .glass-container, .glass-container-strong, .feature-card, .history-container, .weather-card, .insights-container {
+  transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
-.result-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 15px 30px rgba(0,0,0,0.3);
-  border-color: rgba(16, 185, 129, 0.3);
+
+.result-card:hover, .glass-container:hover, .glass-container-strong:hover, .feature-card:hover, .history-container:hover, .weather-card:hover, .insights-container:hover {
+  transform: translateY(-8px) scale(1.01);
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4), 0 0 20px var(--accent-glow);
+  border-color: rgba(16, 185, 129, 0.5) !important;
+}
+
+.box-reactive {
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.box-reactive:hover {
+  transform: translateY(-5px) scale(1.02);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3), 0 0 15px rgba(16, 185, 129, 0.2);
+}
+
+/* Add a subtle shine animation for boxes on hover */
+@keyframes boxShine {
+  from { left: -100%; }
+  to { left: 100%; }
+}
+
+.shine-effect {
+  position: relative;
+  overflow: hidden;
+}
+
+.shine-effect::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+  transition: none;
+}
+
+.shine-effect:hover::after {
+  animation: boxShine 0.8s ease-in-out;
 }

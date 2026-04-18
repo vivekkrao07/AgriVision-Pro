@@ -1,12 +1,30 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useRef } from 'react';
+import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
 import { getDiseaseInfo } from '../utils/diseaseData';
-import { CheckCircle, AlertTriangle, Info, Beaker, AlertOctagon, Sprout, Save, Calendar, MapPin, CheckSquare, Square, BrainCircuit, ExternalLink } from 'lucide-react';
+import { CheckCircle, AlertTriangle, Info, Beaker, AlertOctagon, Sprout, Save, Calendar, MapPin, CheckSquare, Square, BrainCircuit, ExternalLink, Download } from 'lucide-react';
+import html2pdf from 'html2pdf.js';
 
 const PredictionResult = ({ result, previewUrl }) => {
   const [completedSteps, setCompletedSteps] = useState([]);
   const [reminderSet, setReminderSet] = useState(false);
   const [activeTab, setActiveTab] = useState('treatment'); // 'treatment' | 'ai'
+  const [isExporting, setIsExporting] = useState(false);
+  const resultRef = useRef();
+  
+  // Mouse interaction state
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+  
+  const handleMouseMove = ({ currentTarget, clientX, clientY }) => {
+    const { left, top } = currentTarget.getBoundingClientRect();
+    mouseX.set(clientX - left);
+    mouseY.set(clientY - top);
+  };
+  
+  const backgroundGlow = useTransform(
+    [mouseX, mouseY],
+    ([x, y]) => `radial-gradient(250px circle at ${x}px ${y}px, var(--accent-glow), transparent 80%)`
+  );
 
   const isHealthy = result.prediction.toLowerCase().includes('healthy');
   const resultClass = isHealthy ? 'healthy' : 'disease';
@@ -17,13 +35,13 @@ const PredictionResult = ({ result, previewUrl }) => {
   let confLevel = "Low Confidence";
   let confColorClass = "conf-red";
   let confGradient = "linear-gradient(90deg, #f87171, #ef4444)";
-  let confHelperText = "The AI is uncertain about this prediction. Please ensure the leaf is clearly visible and well-lit.";
+  let confHelperText = "I am a bit uncertain about this prediction. Please ensure the leaf is clearly visible and well-lit.";
   
   if (confValue > 90) {
     confLevel = "Very Reliable";
     confColorClass = "conf-green";
     confGradient = "linear-gradient(90deg, #34d399, #10b981)";
-    confHelperText = "High confidence diagnosis. The visual markers strongly match the identified condition.";
+    confHelperText = "I am very confident in this diagnosis. The visual markers strongly match the identified condition.";
   } else if (confValue >= 60) {
     confLevel = "Moderate";
     confColorClass = "conf-yellow";
@@ -69,6 +87,51 @@ const PredictionResult = ({ result, previewUrl }) => {
     window.open(`https://www.google.com/maps/search/agro+shops+near+me`, '_blank');
   };
 
+  const handleExportPDF = () => {
+    setIsExporting(true);
+    const element = resultRef.current;
+    
+    // Configure PDF options
+    const opt = {
+      margin:       [10, 10, 10, 10],
+      filename:     `AgriVision_Report_${new Date().toISOString().split('T')[0]}.pdf`,
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { 
+        scale: 2, 
+        useCORS: true, 
+        backgroundColor: '#0f172a',
+        scrollY: 0,
+        onclone: (clonedDoc) => {
+          const el = clonedDoc.querySelector('.result-card');
+          if (el) {
+            el.style.background = '#0f172a';
+            el.style.color = '#ffffff';
+            el.style.padding = '20px';
+            el.style.backdropFilter = 'none'; // Fix for whitish/transparent issues
+            el.style.webkitBackdropFilter = 'none';
+          }
+          // Also fix text colors for clarity in PDF
+          clonedDoc.querySelectorAll('.step-text, .result-value, .explanation-text').forEach(t => {
+            t.style.color = '#ffffff';
+          });
+        }
+      },
+      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    // Make sure we are on the treatment tab for a complete report
+    if (activeTab !== 'treatment') {
+      setActiveTab('treatment');
+    }
+
+    // Small delay to let the tab switch render if needed
+    setTimeout(() => {
+      html2pdf().from(element).set(opt).save().then(() => {
+        setIsExporting(false);
+      });
+    }, 300);
+  };
+
   // Helper for severity badge colors
   const getSeverityBadgeClass = (severity) => {
     switch (severity.toLowerCase()) {
@@ -81,12 +144,34 @@ const PredictionResult = ({ result, previewUrl }) => {
 
   return (
     <motion.div 
-      className="result-card"
-      initial={{ opacity: 0, scale: 0.9, y: 20 }}
+      ref={resultRef}
+      className="result-card box-reactive"
+      initial={{ opacity: 0, scale: 0.9, y: 30 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.9, y: -20 }}
+      exit={{ opacity: 0, scale: 0.9, y: -30 }}
       transition={{ type: "spring", stiffness: 300, damping: 25 }}
+      onMouseMove={handleMouseMove}
+      whileHover={{ 
+        y: -10,
+        boxShadow: "0 30px 60px rgba(0,0,0,0.4), 0 0 25px rgba(16, 185, 129, 0.2)",
+        borderColor: "rgba(16, 185, 129, 0.4)"
+      }}
+      style={{
+        background: backgroundGlow,
+        position: 'relative',
+        overflow: 'hidden'
+      }}
     >
+      {/* Dynamic Glow Layer */}
+      <motion.div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          background: backgroundGlow,
+          pointerEvents: 'none',
+          zIndex: 0
+        }}
+      />
       <div className="result-tabs">
         <button 
           className={`tab-btn ${activeTab === 'treatment' ? 'active' : ''}`}
@@ -190,12 +275,22 @@ const PredictionResult = ({ result, previewUrl }) => {
               </div>
 
               <div className="action-button-group">
-                <button className="btn-action primary" onClick={handleSavePlan}>
+                <button className="btn-action primary" onClick={handleSavePlan} data-html2canvas-ignore="true">
                   <Save size={16} /> Save Plan
+                </button>
+                <button 
+                  className="btn-action primary" 
+                  onClick={handleExportPDF} 
+                  disabled={isExporting}
+                  style={{ background: '#3b82f6' }}
+                  data-html2canvas-ignore="true"
+                >
+                  <Download size={16} /> {isExporting ? 'Exporting...' : 'Export PDF'}
                 </button>
                 <button 
                   className={`btn-action secondary ${reminderSet ? 'active' : ''}`}
                   onClick={handleSetReminder}
+                  data-html2canvas-ignore="true"
                 >
                   <Calendar size={16} /> {reminderSet ? 'Reminder Set' : 'Set Reminder'}
                 </button>
@@ -214,11 +309,34 @@ const PredictionResult = ({ result, previewUrl }) => {
         >
           <div className="section-header">
             <BrainCircuit size={18} className="text-purple" />
-            <h3>Why this prediction?</h3>
+            <h3>My Expert Insight</h3>
           </div>
           
-          <div className="explanation-image-container">
+          <div className="explanation-image-container" style={{ position: 'relative', overflow: 'hidden' }}>
             <img src={previewUrl} alt="Analyzed Crop" className="explanation-img" />
+            
+            {/* Laser Scan Animation */}
+            <motion.div 
+              initial={{ top: '-5%' }}
+              animate={{ top: '105%' }}
+              transition={{ 
+                duration: 2.5, 
+                repeat: Infinity, 
+                ease: "linear",
+                repeatDelay: 1
+              }}
+              style={{
+                position: 'absolute',
+                left: 0,
+                right: 0,
+                height: '4px',
+                background: 'linear-gradient(to bottom, transparent, #10b981, transparent)',
+                boxShadow: '0 0 15px #10b981',
+                zIndex: 2,
+                opacity: 0.8
+              }}
+            />
+
             <div className="ai-focus-overlay">
               <div className="focus-box box-1"></div>
               <div className="focus-box box-2"></div>
@@ -249,13 +367,34 @@ const PredictionResult = ({ result, previewUrl }) => {
             </div>
           </div>
           
-          <button 
-            className="btn-secondary full-width" 
-            style={{ marginTop: '1.5rem' }}
+          <motion.button 
+            className="full-width" 
+            whileHover={{ 
+              scale: 1.02, 
+              boxShadow: "0 10px 20px rgba(59, 130, 246, 0.3)",
+              filter: "brightness(1.1)"
+            }}
+            whileTap={{ scale: 0.98 }}
+            style={{ 
+              marginTop: '1.5rem',
+              padding: '12px',
+              borderRadius: '12px',
+              border: 'none',
+              background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
+              color: 'white',
+              fontWeight: '600',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              transition: 'all 0.3s ease',
+              boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)'
+            }}
             onClick={() => window.open(`https://www.google.com/search?q=wheat+${result.prediction}+disease+info`, '_blank')}
           >
             <ExternalLink size={16} /> Learn more about {result.prediction}
-          </button>
+          </motion.button>
         </motion.div>
       )}
     </motion.div>

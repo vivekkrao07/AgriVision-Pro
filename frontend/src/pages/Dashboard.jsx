@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import ImageUploader from '../components/ImageUploader';
 import PredictionResult from '../components/PredictionResult';
@@ -7,7 +7,10 @@ import History from '../components/History';
 import QuickInsights from '../components/QuickInsights';
 import TreatmentPanel from '../components/TreatmentPanel';
 import FarmingTips from '../components/FarmingTips';
-import { Sprout, LogOut, User, ClipboardList, Bell } from 'lucide-react';
+import WeatherContext from '../components/WeatherContext';
+import LanguageSelector from '../components/LanguageSelector';
+import AIChat from '../components/AIChat';
+import { Sprout, LogOut, User, ClipboardList, Bell, Trash2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 function Dashboard() {
@@ -23,6 +26,21 @@ function Dashboard() {
   
   const navigate = useNavigate();
   const { currentUser, logout } = useAuth();
+
+  // Mouse interaction state
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+  
+  const handleMouseMove = ({ currentTarget, clientX, clientY }) => {
+    const { left, top } = currentTarget.getBoundingClientRect();
+    mouseX.set(clientX - left);
+    mouseY.set(clientY - top);
+  };
+  
+  const backgroundGlow = useTransform(
+    [mouseX, mouseY],
+    ([x, y]) => `radial-gradient(300px circle at ${x}px ${y}px, var(--accent-glow), transparent 80%)`
+  );
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -45,6 +63,15 @@ function Dashboard() {
       setSavedPlans(plans);
     }
   }, [showProfile, currentUser]);
+
+  const handleRemovePlan = (timestamp) => {
+    if (currentUser) {
+      const key = `agrivision_saved_plans_${currentUser.username}`;
+      const updatedPlans = savedPlans.filter(p => p.timestamp !== timestamp);
+      localStorage.setItem(key, JSON.stringify(updatedPlans));
+      setSavedPlans(updatedPlans);
+    }
+  };
 
   useEffect(() => {
     if (historyKey) {
@@ -207,18 +234,54 @@ function Dashboard() {
 
   return (
     <>
-      <div className="animated-bg" style={{ position: 'fixed', zIndex: -1 }}>
-        <div className="gradient-sphere shape-1"></div>
-        <div className="gradient-sphere shape-2"></div>
-        <div className="gradient-sphere shape-3"></div>
-      </div>
       <div className="app-layout">
-        <main className="main-content">
-          <div className="glass-container relative-container">
-            <div className="dashboard-header-actions" ref={profileRef}>
+        <motion.main 
+          className="main-content"
+          initial="hidden"
+          animate="visible"
+          variants={{
+            hidden: { opacity: 0 },
+            visible: {
+              opacity: 1,
+              transition: {
+                staggerChildren: 0.15
+              }
+            }
+          }}
+        >
+          <motion.div 
+            className="glass-container relative-container"
+            onMouseMove={handleMouseMove}
+            variants={{
+              hidden: { opacity: 0, y: 20 },
+              visible: { opacity: 1, y: 0 }
+            }}
+            whileHover={{ 
+              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 20px rgba(52, 211, 153, 0.08)",
+              borderColor: "rgba(52, 211, 153, 0.2)" 
+            }}
+            style={{
+              background: backgroundGlow,
+              position: 'relative',
+              overflow: 'hidden'
+            }}
+          >
+            {/* Dynamic Glow Layer */}
+            <motion.div
+              style={{
+                position: 'absolute',
+                inset: 0,
+                background: backgroundGlow,
+                pointerEvents: 'none',
+                zIndex: 0
+              }}
+            />
+            <div className="dashboard-top-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', width: '100%' }}>
+                <LanguageSelector />
+              <div className="dashboard-header-actions" ref={profileRef} style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
               <div className="user-profile-container">
                 <div 
-                  className="user-badge" 
+                  className="user-badge notranslate" 
                   style={{ cursor: 'pointer' }}
                   onClick={() => setShowProfile(!showProfile)}
                 >
@@ -233,11 +296,11 @@ function Dashboard() {
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: -10, scale: 0.95 }}
                     >
-                      <div className="profile-avatar">
+                      <div className="profile-avatar notranslate">
                         {currentUser?.username?.charAt(0).toUpperCase()}
                       </div>
                       <div className="profile-info">
-                        <div className="profile-name">{currentUser?.username}</div>
+                        <div className="profile-name notranslate">{currentUser?.username}</div>
                         <div className="profile-role">Registered Farmer</div>
                       </div>
                       <div className="profile-stats">
@@ -255,10 +318,19 @@ function Dashboard() {
                         <div className="p-section-title"><ClipboardList size={14} /> Saved Plans</div>
                         {savedPlans.length > 0 ? (
                           <div className="p-plans-list">
-                            {savedPlans.slice(-3).map((plan, idx) => (
-                              <div key={idx} className="p-plan-item">
-                                <span className="p-plan-name">{plan.prediction}</span>
-                                <span className="p-plan-date">{new Date(plan.timestamp).toLocaleDateString()}</span>
+                            {savedPlans.slice(-5).map((plan, idx) => (
+                              <div key={idx} className="p-plan-item" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                  <span className="p-plan-name">{plan.prediction}</span>
+                                  <span className="p-plan-date">{new Date(plan.timestamp).toLocaleDateString()}</span>
+                                </div>
+                                <button 
+                                  onClick={() => handleRemovePlan(plan.timestamp)}
+                                  style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px', opacity: 0.6 }}
+                                  title="Remove plan"
+                                >
+                                  <Trash2 size={12} />
+                                </button>
                               </div>
                             ))}
                           </div>
@@ -283,6 +355,7 @@ function Dashboard() {
                 <LogOut size={16} />
               </button>
             </div>
+          </div>
           
           <motion.div
             initial={{ opacity: 0, y: -20 }}
@@ -290,10 +363,41 @@ function Dashboard() {
             transition={{ duration: 0.5 }}
           >
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
-              <Sprout size={48} color="#10b981" />
+              <motion.div
+                animate={{ 
+                  y: [0, -10, 0],
+                  rotate: [0, 5, -5, 0]
+                }}
+                transition={{ 
+                  duration: 4, 
+                  repeat: Infinity, 
+                  ease: "easeInOut" 
+                }}
+              >
+                <Sprout size={48} color="#10b981" />
+              </motion.div>
             </div>
-            <h1 className="title">AgriVision</h1>
-            <p className="subtitle">AI-Powered Wheat Disease Detection</p>
+            <motion.h1 
+              className="title notranslate"
+              whileHover={{ 
+                scale: 1.05,
+                letterSpacing: "4px",
+                color: "#34d399",
+                textShadow: "0 0 30px rgba(52, 211, 153, 0.6)",
+                y: -5
+              }}
+              whileTap={{ scale: 0.95 }}
+              style={{ transition: "all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)", cursor: 'default' }}
+            >
+              AgriVision
+            </motion.h1>
+            <motion.p 
+              className="subtitle"
+              whileHover={{ color: "white", y: -2 }}
+              transition={{ type: "spring", stiffness: 400 }}
+            >
+              AI-Powered Wheat Disease Detection
+            </motion.p>
           </motion.div>
 
           <div className="analysis-container">
@@ -319,6 +423,7 @@ function Dashboard() {
 
               <motion.button
                 className="btn-primary"
+                style={{ marginTop: '2rem' }}
                 onClick={() => handlePredict()}
                 disabled={!selectedFile || isLoading}
                 whileHover={!selectedFile || isLoading ? {} : { scale: 1.02 }}
@@ -351,22 +456,76 @@ function Dashboard() {
               </AnimatePresence>
             </div>
           </div>
-        </div>
+          </motion.div>
+          
+          <motion.div
+            variants={{
+              hidden: { opacity: 0, y: 20 },
+              visible: { opacity: 1, y: 0 }
+            }}
+          >
+            <TreatmentPanel result={result} />
+          </motion.div>
 
-        <TreatmentPanel result={result} />
-        <FarmingTips />
-      </main>
+          <motion.div
+            variants={{
+              hidden: { opacity: 0, y: 20 },
+              visible: { opacity: 1, y: 0 }
+            }}
+          >
+            <FarmingTips />
+          </motion.div>
+        </motion.main>
 
-      <aside className="sidebar">
-        <History 
-          history={history} 
-          onClearHistory={handleClearHistory} 
-          onViewDetails={handleViewHistoryItem}
-          onReAnalyze={handleReAnalyzeHistoryItem}
-        />
-        <QuickInsights history={history} />
-      </aside>
-    </div>
+        <motion.aside 
+          className="sidebar"
+          initial="hidden"
+          animate="visible"
+          variants={{
+            hidden: { opacity: 0 },
+            visible: {
+              opacity: 1,
+              transition: {
+                staggerChildren: 0.15,
+                delayChildren: 0.5
+              }
+            }
+          }}
+        >
+          <motion.div
+            variants={{
+              hidden: { opacity: 0, x: 20 },
+              visible: { opacity: 1, x: 0 }
+            }}
+          >
+            <WeatherContext />
+          </motion.div>
+
+          <motion.div
+            variants={{
+              hidden: { opacity: 0, x: 20 },
+              visible: { opacity: 1, x: 0 }
+            }}
+          >
+            <History 
+              history={history} 
+              onClearHistory={handleClearHistory} 
+              onViewDetails={handleViewHistoryItem}
+              onReAnalyze={handleReAnalyzeHistoryItem}
+            />
+          </motion.div>
+
+          <motion.div
+            variants={{
+              hidden: { opacity: 0, x: 20 },
+              visible: { opacity: 1, x: 0 }
+            }}
+          >
+            <QuickInsights history={history} />
+          </motion.div>
+        </motion.aside>
+      </div>
+    <AIChat currentPrediction={result?.prediction} />
     </>
   );
 }

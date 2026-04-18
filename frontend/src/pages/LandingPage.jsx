@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Sprout, Activity, ShieldCheck, Leaf, AlertCircle, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -13,6 +13,21 @@ const LandingPage = () => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
   const { login, register, currentUser } = useAuth();
+  
+  // Mouse interaction state
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+  
+  const handleMouseMove = ({ currentTarget, clientX, clientY }) => {
+    const { left, top } = currentTarget.getBoundingClientRect();
+    mouseX.set(clientX - left);
+    mouseY.set(clientY - top);
+  };
+  
+  const backgroundGlow = useTransform(
+    [mouseX, mouseY],
+    ([x, y]) => `radial-gradient(250px circle at ${x}px ${y}px, var(--accent-glow), transparent 80%)`
+  );
 
   // If already logged in, redirect to dashboard
   useEffect(() => {
@@ -58,12 +73,29 @@ const LandingPage = () => {
   };
 
   return (
-    <div className="landing-layout">
-      {/* Animated Background Overlay */}
-      <div className="animated-bg">
-        <div className="gradient-sphere shape-1"></div>
-        <div className="gradient-sphere shape-2"></div>
-        <div className="gradient-sphere shape-3"></div>
+    <div className="landing-layout" onMouseMove={handleMouseMove}>
+      {/* Background Decorative Shapes */}
+      <div className="landing-bg-elements" style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+        <motion.div 
+          className="bg-shape-1"
+          animate={{ 
+            y: [0, -20, 0],
+            rotate: [0, 5, 0],
+            scale: [1, 1.1, 1]
+          }}
+          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+          style={{ position: 'absolute', top: '10%', left: '5%', width: '300px', height: '300px', background: 'rgba(52, 211, 153, 0.04)', borderRadius: '40% 60% 70% 30% / 40% 50% 60% 50%', filter: 'blur(60px)' }}
+        />
+        <motion.div 
+          className="bg-shape-2"
+          animate={{ 
+            y: [0, 30, 0],
+            rotate: [0, -10, 0],
+            scale: [1, 1.2, 1]
+          }}
+          transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+          style={{ position: 'absolute', bottom: '15%', right: '10%', width: '400px', height: '400px', background: 'rgba(16, 185, 129, 0.04)', borderRadius: '60% 40% 30% 70% / 50% 60% 40% 60%', filter: 'blur(80px)' }}
+        />
       </div>
       
       <div className="landing-container">
@@ -85,29 +117,64 @@ const LandingPage = () => {
               Crop diseases can devastate yields and threaten food security. AgriVision uses advanced Vision Transformers to detect wheat diseases instantly from a single smartphone photo, providing actionable insights right when you need them.
             </p>
             
-            <div className="features-grid">
-              <div className="feature-card glass-panel">
+            <motion.div 
+              className="features-grid"
+              variants={{
+                hidden: { opacity: 0 },
+                visible: {
+                  opacity: 1,
+                  transition: {
+                    staggerChildren: 0.2,
+                    delayChildren: 0.4
+                  }
+                }
+              }}
+              initial="hidden"
+              animate="visible"
+            >
+              <motion.div 
+                className="feature-card glass-panel shine-effect"
+                variants={{
+                  hidden: { opacity: 0, x: -30 },
+                  visible: { opacity: 1, x: 0 }
+                }}
+                whileHover={{ scale: 1.05, x: 10 }}
+              >
                 <Activity size={24} className="feature-icon text-blue" />
                 <div>
                   <h3>Instant Analysis</h3>
                   <p>Accurate disease predictions in seconds without leaving the field.</p>
                 </div>
-              </div>
-              <div className="feature-card glass-panel">
+              </motion.div>
+              <motion.div 
+                className="feature-card glass-panel shine-effect"
+                variants={{
+                  hidden: { opacity: 0, x: -30 },
+                  visible: { opacity: 1, x: 0 }
+                }}
+                whileHover={{ scale: 1.05, x: 10 }}
+              >
                 <ShieldCheck size={24} className="feature-icon text-green" />
                 <div>
                   <h3>Treatment Plans</h3>
                   <p>Receive actionable maintenance advice tailored to the specific condition.</p>
                 </div>
-              </div>
-              <div className="feature-card glass-panel">
+              </motion.div>
+              <motion.div 
+                className="feature-card glass-panel shine-effect"
+                variants={{
+                  hidden: { opacity: 0, x: -30 },
+                  visible: { opacity: 1, x: 0 }
+                }}
+                whileHover={{ scale: 1.05, x: 10 }}
+              >
                 <Leaf size={24} className="feature-icon text-yellow" />
                 <div>
                   <h3>Historical Tracking</h3>
                   <p>Keep a detailed log of past scans to monitor crop health over time.</p>
                 </div>
-              </div>
-            </div>
+              </motion.div>
+            </motion.div>
           </div>
         </motion.div>
 
@@ -118,7 +185,31 @@ const LandingPage = () => {
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
         >
-          <div className="login-card glass-container-strong">
+          <motion.div 
+            className="login-card glass-container-strong shine-effect"
+            onMouseMove={handleMouseMove}
+            whileHover={{ 
+              scale: 1.01,
+              boxShadow: "0 30px 60px rgba(0,0,0,0.5), 0 0 20px rgba(52, 211, 153, 0.08)",
+              borderColor: "rgba(52, 211, 153, 0.2)"
+            }}
+            transition={{ type: "spring", stiffness: 300 }}
+            style={{
+              background: backgroundGlow,
+              position: 'relative',
+              overflow: 'hidden'
+            }}
+          >
+            {/* Dynamic Glow Layer */}
+            <motion.div
+              style={{
+                position: 'absolute',
+                inset: 0,
+                background: backgroundGlow,
+                pointerEvents: 'none',
+                zIndex: 0
+              }}
+            />
             <div className="login-header">
               <h2 className="login-title">{isLoginMode ? 'Welcome Back' : 'Create Account'}</h2>
               <p className="login-subtitle">
@@ -205,7 +296,7 @@ const LandingPage = () => {
                 {isLoginMode ? 'Sign up' : 'Sign in'}
               </span>
             </p>
-          </div>
+          </motion.div>
         </motion.div>
       </div>
     </div>

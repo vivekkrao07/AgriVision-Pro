@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { UploadCloud, Camera, RefreshCw, Trash2, X, Aperture, CheckCircle2, AlertCircle, HelpCircle } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
 
 const ImageUploader = ({ onFileSelect, previewUrl, onClearImage }) => {
   const [isDragActive, setIsDragActive] = useState(false);
@@ -10,6 +10,21 @@ const ImageUploader = ({ onFileSelect, previewUrl, onClearImage }) => {
   const fileInputRef = useRef(null);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
+  
+  // Mouse interaction state
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+  
+  const handleMouseMove = ({ currentTarget, clientX, clientY }) => {
+    const { left, top } = currentTarget.getBoundingClientRect();
+    mouseX.set(clientX - left);
+    mouseY.set(clientY - top);
+  };
+  
+  const backgroundGlow = useTransform(
+    [mouseX, mouseY],
+    ([x, y]) => `radial-gradient(250px circle at ${x}px ${y}px, var(--accent-glow), transparent 80%)`
+  );
 
   const handleDragEnter = (e) => {
     e.preventDefault();
@@ -189,72 +204,114 @@ const ImageUploader = ({ onFileSelect, previewUrl, onClearImage }) => {
       </AnimatePresence>
       
       {!previewUrl ? (
-        <div 
+        <motion.div 
           className={`upload-zone ${isDragActive ? 'drag-active' : ''}`}
           onDragEnter={handleDragEnter}
           onDragOver={handleDragEnter}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           onClick={() => fileInputRef.current.click()}
+          onMouseMove={handleMouseMove}
+          whileHover={{ 
+            scale: 1.01,
+            borderColor: "rgba(16, 185, 129, 0.4)",
+          }}
+          style={{
+            background: backgroundGlow,
+            position: 'relative',
+            overflow: 'hidden'
+          }}
+          transition={{ duration: 0.2 }}
         >
+          {/* Dynamic Glow Layer */}
+          <motion.div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background: backgroundGlow,
+              pointerEvents: 'none',
+              zIndex: 0
+            }}
+          />
           <UploadCloud className="upload-icon" size={48} />
           <p className="upload-text">Drag & drop a leaf image here</p>
           <p className="upload-subtext">or click to browse files</p>
           
           <div className="upload-actions" onClick={(e) => e.stopPropagation()}>
-            <button 
+            <motion.button 
               className="btn-secondary camera-btn" 
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               onClick={(e) => {
                 e.stopPropagation();
                 openCamera();
               }}
             >
               <Camera size={18} /> 📷 Capture from Camera
-            </button>
+            </motion.button>
           </div>
-        </div>
+        </motion.div>
       ) : (
-        <div className="preview-layout">
-          <div className="image-preview-container" onClick={() => fileInputRef.current.click()} style={{ cursor: 'pointer' }}>
-            <img src={previewUrl} alt="Preview" className="image-preview" />
-            <div className="preview-overlay">
-              Tap to replace image
+          <motion.div 
+            className="preview-layout"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ type: "spring", stiffness: 300, damping: 20 }}
+          >
+            <motion.div 
+              className="image-preview-container shine-effect" 
+              onClick={() => fileInputRef.current.click()} 
+              style={{ cursor: 'pointer' }}
+              whileHover={{ scale: 1.02 }}
+            >
+              <img src={previewUrl} alt="Preview" className="image-preview" />
+              <div className="preview-overlay">
+                Tap to replace image
+              </div>
+            </motion.div>
+            <div className="preview-controls">
+               <motion.button 
+                  className="btn-control btn-replace" 
+                  onClick={() => fileInputRef.current.click()}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+               >
+                  <RefreshCw size={16} /> 🔄 Replace
+               </motion.button>
+               <motion.button 
+                  className="btn-control btn-remove" 
+                  onClick={onClearImage}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+               >
+                  <Trash2 size={16} /> ❌ Remove
+               </motion.button>
             </div>
-          </div>
-          <div className="preview-controls">
-             <motion.button 
-                className="btn-control btn-replace" 
-                onClick={() => fileInputRef.current.click()}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-             >
-                <RefreshCw size={16} /> 🔄 Replace
-             </motion.button>
-             <motion.button 
-                className="btn-control btn-remove" 
-                onClick={onClearImage}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-             >
-                <Trash2 size={16} /> ❌ Remove
-             </motion.button>
-          </div>
 
           <div className="quality-checklist">
             <h4 className="quality-title">Image Quality Check</h4>
             <div className="quality-grid">
-              <div className={`quality-item ${qualityStats.lighting}`}>
+              <motion.div 
+                className={`quality-item ${qualityStats.lighting}`}
+                whileHover={{ scale: 1.05, backgroundColor: "rgba(255,255,255,0.05)" }}
+              >
                 {qualityStats.lighting === 'good' ? <CheckCircle2 size={14} /> : <AlertCircle size={14} />}
                 <span>Good Lighting</span>
-              </div>
-              <div className={`quality-item ${qualityStats.focus}`}>
+              </motion.div>
+              <motion.div 
+                className={`quality-item ${qualityStats.focus}`}
+                whileHover={{ scale: 1.05, backgroundColor: "rgba(255,255,255,0.05)" }}
+              >
                 {qualityStats.focus === 'good' ? <CheckCircle2 size={14} /> : <AlertCircle size={14} />}
                 <span>Clear Focus</span>
-              </div>
-              <div className={`quality-item ${qualityStats.visibility}`}>
+              </motion.div>
+              <motion.div 
+                className={`quality-item ${qualityStats.visibility}`}
+                whileHover={{ scale: 1.05, backgroundColor: "rgba(255,255,255,0.05)" }}
+              >
                 {qualityStats.visibility === 'good' ? <CheckCircle2 size={14} /> : <AlertCircle size={14} />}
                 <span>Leaf Visible</span>
-              </div>
+              </motion.div>
             </div>
             {qualityStats.lighting === 'poor' && (
               <p className="quality-warning">
@@ -272,7 +329,7 @@ const ImageUploader = ({ onFileSelect, previewUrl, onClearImage }) => {
               </p>
             )}
           </div>
-        </div>
+        </motion.div>
       )}
     </div>
   );

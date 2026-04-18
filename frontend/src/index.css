@@ -11,12 +11,27 @@
   --text-secondary: #94a3b8;
   --accent-color: #10b981;
   /* Emerald 500 */
-  --accent-glow: rgba(16, 185, 129, 0.4);
+  --accent-glow: rgba(16, 185, 129, 0.04);
   --error-color: #ef4444;
   /* Red 500 */
   --glass-border: rgba(255, 255, 255, 0.1);
   --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  --panel-bg: rgba(15, 23, 42, 0.4);
 }
+
+
+  --bg-color: #f1f5f9;
+  --card-bg: rgba(255, 255, 255, 0.9);
+  --card-bg-light: #ffffff;
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
+  --accent-color: #0d9488;
+  --accent-glow: rgba(13, 148, 136, 0.08);
+  --error-color: #e11d48;
+  --glass-border: rgba(13, 148, 136, 0.1);
+  --glass-shadow: 0 10px 40px rgba(0, 0, 0, 0.04);
+  --panel-bg: rgba(255, 255, 255, 0.7);
+
 
 * {
   box-sizing: border-box;
@@ -28,12 +43,13 @@ body {
   font-family: 'Inter', sans-serif;
   background-color: var(--bg-color);
   background-image:
-    radial-gradient(at 0% 0%, rgba(16, 185, 129, 0.15) 0px, transparent 50%),
-    radial-gradient(at 100% 100%, rgba(56, 189, 248, 0.1) 0px, transparent 50%);
+    radial-gradient(at 0% 0%, var(--accent-glow) 0px, transparent 40%),
+    radial-gradient(at 100% 100%, rgba(56, 189, 248, 0.03) 0px, transparent 40%);
   color: var(--text-primary);
   min-height: 100vh;
   background-attachment: fixed;
   overflow-x: hidden;
+
 }
 
 .app-layout {
@@ -106,7 +122,7 @@ body {
   text-align: center;
   cursor: pointer;
   transition: all 0.3s ease;
-  background: rgba(16, 185, 129, 0.03);
+  background: rgba(16, 185, 129, 0.02);
   position: relative;
   overflow: hidden;
 }
@@ -168,9 +184,20 @@ body {
   box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.3);
 }
 
+@keyframes pulse-glow {
+  0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+  70% { box-shadow: 0 0 0 15px rgba(16, 185, 129, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+.btn-primary:not(:disabled) {
+  animation: pulse-glow 2s infinite;
+}
+
 .btn-primary:hover:not(:disabled) {
   transform: translateY(-2px);
   box-shadow: 0 15px 20px -3px rgba(16, 185, 129, 0.4);
+  animation: none; /* Stop pulsing on hover */
 }
 
 .btn-primary:disabled {
@@ -481,67 +508,74 @@ body {
   justify-content: center;
 }
 
+@keyframes aurora {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
 .animated-bg {
   position: absolute;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
+  width: 100vw;
+  height: 100vh;
   z-index: -1;
-  background: linear-gradient(120deg, #0f172a, #1e293b);
+  background: linear-gradient(-45deg, #020617, #0f172a, #020617, #000000);
+  background-size: 300% 300%;
+  animation: aurora 30s ease infinite;
   overflow: hidden;
 }
 
 .gradient-sphere {
   position: absolute;
   border-radius: 50%;
-  filter: blur(80px);
-  opacity: 0.6;
-  animation: float 20s infinite ease-in-out alternate;
+  filter: blur(120px);
+  opacity: 0.1;
+  animation: float 35s infinite ease-in-out alternate;
 }
 
 .shape-1 {
-  width: 500px;
-  height: 500px;
-  background: rgba(16, 185, 129, 0.4);
+  width: 700px;
+  height: 700px;
+  background: rgba(16, 185, 129, 0.8);
   top: -10%;
-  left: -10%;
-  animation-delay: 0s;
+  left: -20%;
+  animation-duration: 40s;
 }
 
 .shape-2 {
-  width: 600px;
-  height: 600px;
-  background: rgba(56, 189, 248, 0.3);
+  width: 800px;
+  height: 800px;
+  background: rgba(56, 189, 248, 0.8);
   bottom: -20%;
-  right: -10%;
+  right: -20%;
+  animation-duration: 35s;
   animation-delay: -5s;
 }
 
 .shape-3 {
-  width: 400px;
-  height: 400px;
-  background: rgba(139, 92, 246, 0.3);
-  top: 40%;
+  width: 600px;
+  height: 600px;
+  background: rgba(139, 92, 246, 0.8);
+  top: 30%;
   left: 40%;
-  animation-delay: -10s;
+  animation-duration: 45s;
+  animation-delay: -15s;
 }
 
 @keyframes float {
   0% {
-    transform: translate(0, 0) scale(1);
+    transform: translate(0, 0) scale(1) rotate(0deg);
   }
-
   33% {
-    transform: translate(30px, -50px) scale(1.1);
+    transform: translate(30px, -50px) scale(1.05) rotate(45deg);
   }
-
   66% {
-    transform: translate(-20px, 20px) scale(0.9);
+    transform: translate(-30px, 50px) scale(0.95) rotate(90deg);
   }
-
   100% {
-    transform: translate(0, 0) scale(1);
+    transform: translate(15px, -15px) scale(1) rotate(180deg);
   }
 }
 
@@ -552,13 +586,13 @@ body {
   max-width: 1200px;
   min-height: 80vh;
   margin: 2rem;
-  background: rgba(15, 23, 42, 0.4);
+  background: var(--panel-bg);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
   border: 1px solid var(--glass-border);
   border-radius: 30px;
   overflow: hidden;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+  box-shadow: var(--glass-shadow);
 }
 
 /* Project Info Section */
@@ -664,19 +698,25 @@ body {
   align-items: center;
   justify-content: center;
   padding: 4rem;
-  background: rgba(15, 23, 42, 0.6);
+  background: var(--card-bg);
 }
 
 .glass-container-strong {
   background: rgba(30, 41, 59, 0.8);
   backdrop-filter: blur(30px);
   -webkit-backdrop-filter: blur(30px);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.2);
   border-radius: 24px;
   padding: 3rem;
   width: 100%;
   max-width: 450px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 0 30px rgba(16, 185, 129, 0.1), 0 20px 40px rgba(0, 0, 0, 0.4);
+  animation: card-aura 6s ease-in-out infinite alternate;
+}
+
+@keyframes card-aura {
+  0% { box-shadow: 0 0 20px rgba(16, 185, 129, 0.05), 0 20px 40px rgba(0, 0, 0, 0.4); border-color: rgba(16, 185, 129, 0.1); }
+  100% { box-shadow: 0 0 40px rgba(16, 185, 129, 0.15), 0 20px 40px rgba(0, 0, 0, 0.4); border-color: rgba(16, 185, 129, 0.3); }
 }
 
 .login-header {
@@ -1987,6 +2027,7 @@ body {
 }
 
 .treatment-step {
+  transition: all 0.2s ease;
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -1995,6 +2036,11 @@ body {
   background: rgba(255, 255, 255, 0.03);
   padding: 0.75rem;
   border-radius: 10px;
+}
+
+.treatment-step:hover {
+  background: rgba(16, 185, 129, 0.15) !important;
+  color: #10b981 !important;
 }
 
 .step-dot {
@@ -2141,5 +2187,108 @@ body {
   gap: 0.5rem;
   font-size: 0.85rem;
   color: var(--text-primary);
+}
+
+/* ------------------------------------- */
+/* Google Translate Core Overrides       */
+/* ------------------------------------- */
+.goog-te-banner-frame.skiptranslate, 
+.goog-te-banner-frame, 
+#goog-gt-tt, 
+.goog-te-balloon-frame, 
+.goog-te-menu-frame { 
+  display: none !important; 
+}
+
+body { 
+  top: 0px !important; 
+}
+
+.skiptranslate {
+  display: none !important;
+}
+
+.goog-logo-link { 
+  display: none !important; 
+}
+
+.goog-te-gadget { 
+  color: transparent !important; 
+}
+
+/* Fix for Google Translate blurriness and hover highlights */
+* {
+  -webkit-font-smoothing: antialiased !important;
+  -moz-osx-font-smoothing: grayscale !important;
+  text-rendering: optimizeLegibility !important;
+}
+
+/* Disable Google Translate's annoying hover effects */
+font {
+  background-color: transparent !important;
+  box-shadow: none !important;
+  position: relative !important;
+}
+
+font:hover {
+  background-color: transparent !important;
+  box-shadow: none !important;
+}
+
+.goog-text-highlight {
+  background-color: transparent !important;
+  box-shadow: none !important;
+}
+
+#goog-gt-tt, .goog-tooltip, .goog-tooltip:hover {
+  display: none !important;
+  visibility: hidden !important;
+}
+
+.goog-te-balloon-frame {
+  display: none !important;
+}
+
+/* --- New Animation & Reactivity Utilities --- */
+
+.box-reactive {
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.box-reactive:hover {
+  transform: translateY(-5px) scale(1.01);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 20px var(--accent-glow);
+  border-color: rgba(16, 185, 129, 0.4) !important;
+}
+
+.box-reactive:active {
+  transform: translateY(-2px) scale(0.99);
+}
+
+/* Enhance existing glass containers */
+.glass-container, .glass-container-strong, .result-card, .history-container, .feature-card {
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.glass-container:hover, .glass-container-strong:hover {
+  border-color: rgba(16, 185, 129, 0.3) !important;
+  box-shadow: var(--glass-shadow), 0 0 30px rgba(16, 185, 129, 0.1);
+}
+
+/* Staggered Entrance Utility (for Framer Motion) */
+.stagger-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+@keyframes float-subtle {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0px); }
+}
+
+.floating-box {
+  animation: float-subtle 6s ease-in-out infinite;
 }
 

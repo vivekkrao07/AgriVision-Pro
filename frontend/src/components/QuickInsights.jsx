@@ -48,10 +48,15 @@ const QuickInsights = ({ history }) => {
 
   return (
     <motion.div 
-      className="insights-container"
-      initial={{ opacity: 0, y: 20 }}
+      className="insights-container box-reactive"
+      initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.2 }}
+      transition={{ delay: 0.2, type: "spring", stiffness: 260 }}
+      whileHover={{ 
+        y: -5,
+        boxShadow: "0 25px 50px rgba(0,0,0,0.4), 0 0 20px rgba(56, 189, 248, 0.1)",
+        borderColor: "rgba(56, 189, 248, 0.3)"
+      }}
     >
       <div className="insights-header">
         <h3 className="insights-title">Performance Analytics</h3>
@@ -59,26 +64,51 @@ const QuickInsights = ({ history }) => {
       </div>
 
       <div className="insights-grid">
-        <div className="insight-card">
+        <motion.div 
+          className="insight-card" 
+          whileHover={{ 
+            scale: 1.05, 
+            y: -5,
+            backgroundColor: "rgba(255,255,255,0.05)",
+            boxShadow: "0 10px 25px rgba(0,0,0,0.3)"
+          }} 
+          transition={{ type: "spring", stiffness: 300 }}
+        >
           <span className="insight-value">{totalScans}</span>
           <span className="insight-label">Total Scans</span>
-        </div>
+        </motion.div>
         
-        <div className="insight-card insight-success">
+        <motion.div 
+          className="insight-card insight-success" 
+          whileHover={{ 
+            scale: 1.05, 
+            y: -5,
+            boxShadow: "0 10px 25px rgba(16, 185, 129, 0.15)"
+          }} 
+          transition={{ type: "spring", stiffness: 300 }}
+        >
           <div className="insight-stat">
             <Target size={14} />
             <span className="insight-value">{successRate}%</span>
           </div>
           <span className="insight-label">Healthy Rate</span>
-        </div>
+        </motion.div>
         
-        <div className="insight-card insight-disease">
+        <motion.div 
+          className="insight-card insight-disease" 
+          whileHover={{ 
+            scale: 1.05, 
+            y: -5,
+            boxShadow: "0 10px 25px rgba(239, 68, 68, 0.15)"
+          }} 
+          transition={{ type: "spring", stiffness: 300 }}
+        >
           <div className="insight-value">{diseasedScans}</div>
           <div className="insight-label">Diseased</div>
           <div className={`insight-stat ${trendClass}`}>
             {trendIcon} {trend}
           </div>
-        </div>
+        </motion.div>
       </div>
 
       <div className="health-tracking-chart">

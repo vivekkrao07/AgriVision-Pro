@@ -20,9 +20,24 @@ const History = ({ history, onClearHistory, onViewDetails, onReAnalyze }) => {
   const displayHistory = showAll ? filteredHistory : filteredHistory.slice(0, 3);
 
   return (
-    <div className="history-container">
+    <motion.div 
+      className="history-container box-reactive"
+      initial={{ opacity: 0, x: 30 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ type: "spring", stiffness: 260 }}
+      whileHover={{ 
+        boxShadow: "0 25px 50px rgba(0,0,0,0.4), 0 0 20px rgba(16, 185, 129, 0.1)",
+        borderColor: "rgba(16, 185, 129, 0.2)"
+      }}
+    >
       <div className="history-header">
-        <h3 className="history-title">Recent Scans</h3>
+        <motion.h3 
+          className="history-title"
+          whileHover={{ x: 5, color: "#10b981" }}
+          style={{ transition: "all 0.2s ease", cursor: 'default' }}
+        >
+          Recent Scans
+        </motion.h3>
         <button className="clear-btn" onClick={onClearHistory}>
           <Trash2 size={14} /> Clear
         </button>
@@ -57,13 +72,20 @@ const History = ({ history, onClearHistory, onViewDetails, onReAnalyze }) => {
       <div className="history-list">
         <AnimatePresence>
           {displayHistory.length > 0 ? (
-            displayHistory.map((item) => (
+            displayHistory.map((item, index) => (
               <motion.div 
                 key={item.id}
                 layout
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
+                transition={{ delay: index * 0.1, type: "spring", stiffness: 300 }}
+                whileHover={{ 
+                  scale: 1.03,
+                  backgroundColor: "rgba(255, 255, 255, 0.05)",
+                  borderColor: "rgba(16, 185, 129, 0.3)",
+                  boxShadow: "0 10px 20px rgba(0,0,0,0.2)"
+                }}
                 className="history-item"
                 onClick={() => onViewDetails(item)}
               >
@@ -123,7 +145,7 @@ const History = ({ history, onClearHistory, onViewDetails, onReAnalyze }) => {
           </button>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 };
 
