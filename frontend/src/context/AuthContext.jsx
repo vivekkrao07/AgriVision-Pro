@@ -1,6 +1,8 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 
 const AuthContext = createContext();
+const API_URL = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
+const TOKEN_STORAGE_KEY = 'agrivision_auth_token';
 
 export const useAuth = () => useContext(AuthContext);
 
@@ -9,51 +11,107 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check if user is logged in
-    const storedUser = localStorage.getItem('agrivision_current_user');
-    if (storedUser) {
-      setCurrentUser(JSON.parse(storedUser));
-    }
-    setLoading(false);
+    const bootstrapAuth = async () => {
+      const storedToken = localStorage.getItem(TOKEN_STORAGE_KEY);
+
+      if (!storedToken) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_URL}/auth/me`, {
+          headers: {
+            Authorization: `Bearer ${storedToken}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error('Session expired');
+        }
+
+        const user = await response.json();
+        setCurrentUser(user);
+      } catch (error) {
+        localStorage.removeItem(TOKEN_STORAGE_KEY);
+        setCurrentUser(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    bootstrapAuth();
   }, []);
 
-  const login = (username, password) => {
-    const users = JSON.parse(localStorage.getItem('agrivision_users') || '[]');
-    const user = users.find(u => u.username === username && u.password === password);
-    
-    if (user) {
+  const login = async (username, password) => {
+    try {
+      const formData = new URLSearchParams();
+      formData.append('username', username);
+      formData.append('password', password);
+
+      const loginResponse = await fetch(`${API_URL}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: formData.toString(),
+      });
+
+      const loginData = await loginResponse.json();
+
+      if (!loginResponse.ok) {
+        return { success: false, error: loginData.detail || 'Invalid username or password' };
+      }
+
+      localStorage.setItem(TOKEN_STORAGE_KEY, loginData.access_token);
+
+      const userResponse = await fetch(`${API_URL}/auth/me`, {
+        headers: {
+          Authorization: `Bearer ${loginData.access_token}`,
+        },
+      });
+
+      if (!userResponse.ok) {
+        throw new Error('Failed to load account');
+      }
+
+      const user = await userResponse.json();
       setCurrentUser(user);
-      localStorage.setItem('agrivision_current_user', JSON.stringify(user));
       return { success: true };
-    } else {
+    } catch (error) {
       return { success: false, error: 'Invalid username or password' };
     }
   };
 
-  const register = (username, password) => {
+  const register = async (username, password) => {
     if (!username || !password) {
         return { success: false, error: 'Please fill in all fields' };
     }
 
-    const users = JSON.parse(localStorage.getItem('agrivision_users') || '[]');
-    const existingUser = users.find(u => u.username === username);
-    
-    if (existingUser) {
-      return { success: false, error: 'Username already exists' };
+    try {
+      const registerResponse = await fetch(`${API_URL}/auth/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username, password }),
+      });
+
+      const registerData = await registerResponse.json();
+
+      if (!registerResponse.ok) {
+        return { success: false, error: registerData.detail || 'Unable to create account' };
+      }
+
+      return await login(username, password);
+    } catch (error) {
+      return { success: false, error: 'Unable to connect to the server' };
     }
-    
-    const newUser = { username, password };
-    users.push(newUser);
-    localStorage.setItem('agrivision_users', JSON.stringify(users));
-    
-    setCurrentUser(newUser);
-    localStorage.setItem('agrivision_current_user', JSON.stringify(newUser));
-    return { success: true };
   };
 
   const logout = () => {
     setCurrentUser(null);
-    localStorage.removeItem('agrivision_current_user');
+    localStorage.removeItem(TOKEN_STORAGE_KEY);
   };
 
   const value = {

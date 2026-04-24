@@ -1,13 +1,24 @@
 import io
 import os
 import random
-from fastapi import FastAPI, File, UploadFile, HTTPException
+from datetime import timedelta
+
+from fastapi import Depends, FastAPI, File, HTTPException, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import OAuth2PasswordRequestForm
 from model_handler import get_disease_prediction
 from PIL import Image
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
+
+import auth
+import database
+import models
+import schemas
 
 app = FastAPI(title="Wheat Disease Prediction API")
+
+models.Base.metadata.create_all(bind=database.engine)
 
 class ChatRequest(BaseModel):
     message: str
@@ -49,6 +60,45 @@ OFFLINE_RESPONSES = {
 @app.get("/")
 def read_root():
     return {"message": "Wheat Disease Prediction API is running. Use /predict to classify images."}
+
+@app.post("/auth/register", response_model=schemas.User, status_code=status.HTTP_201_CREATED)
+def register_user(user: schemas.UserCreate, db: Session = Depends(database.get_db)):
+    existing_user = db.query(models.User).filter(models.User.username == user.username).first()
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Username already exists")
+
+    db_user = models.User(
+        username=user.username,
+        hashed_password=auth.get_password_hash(user.password),
+    )
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    return db_user
+
+@app.post("/auth/login", response_model=schemas.Token)
+def login_user(
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: Session = Depends(database.get_db),
+):
+    user = db.query(models.User).filter(models.User.username == form_data.username).first()
+    if not user or not auth.verify_password(form_data.password, user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    access_token_expires = timedelta(minutes=auth.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = auth.create_access_token(
+        data={"sub": user.username},
+        expires_delta=access_token_expires,
+    )
+    return {"access_token": access_token, "token_type": "bearer"}
+
+@app.get("/auth/me", response_model=schemas.User)
+async def read_current_user(current_user: models.User = Depends(auth.get_current_user)):
+    return current_user
 
 @app.post("/predict")
 async def predict_disease(file: UploadFile = File(...)):

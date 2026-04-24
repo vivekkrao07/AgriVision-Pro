@@ -3,6 +3,7 @@ import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-mo
 import { getDiseaseInfo } from '../utils/diseaseData';
 import { CheckCircle, AlertTriangle, Info, Beaker, AlertOctagon, Sprout, Save, Calendar, MapPin, CheckSquare, Square, BrainCircuit, ExternalLink, Download } from 'lucide-react';
 import html2pdf from 'html2pdf.js';
+import { useAuth } from '../context/AuthContext';
 
 const PredictionResult = ({ result, previewUrl }) => {
   const [completedSteps, setCompletedSteps] = useState([]);
@@ -10,6 +11,7 @@ const PredictionResult = ({ result, previewUrl }) => {
   const [activeTab, setActiveTab] = useState('treatment'); // 'treatment' | 'ai'
   const [isExporting, setIsExporting] = useState(false);
   const resultRef = useRef();
+  const { currentUser } = useAuth();
   
   // Mouse interaction state
   const mouseX = useMotionValue(0);
@@ -58,9 +60,7 @@ const PredictionResult = ({ result, previewUrl }) => {
   };
 
   const handleSavePlan = () => {
-    const username = localStorage.getItem('agrivision_current_user') 
-      ? JSON.parse(localStorage.getItem('agrivision_current_user')).username 
-      : 'guest';
+    const username = currentUser?.username || 'guest';
       
     const plan = {
       prediction: result.prediction,
